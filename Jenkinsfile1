@@ -57,21 +57,33 @@ pipeline {
                 sh 'trivy fs . > trivyfs.txt'
             }
         }
-        stage('Docker Build & Push') {
-            steps {
-                script {
-                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                        sh ''' 
-                        echo "Building Docker image..."
-                        docker build --no-cache -t abhi20242024/bms:latest -f bookmyshow-app/Dockerfile bookmyshow-app
+      stage('Docker Build & Push') {
+    steps {
+        script {
+            // Authenticate with Docker registry (if required)
+            withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                // Build Docker image
+                sh ''' 
+                echo "Building Docker image..."
+                docker build --no-cache -t abhi20242024/bms:latest -f bookmyshow-app/Dockerfile bookmyshow-app
+                if [ $? -ne 0 ]; then
+                    echo "Docker build failed"
+                    exit 1
+                fi
 
-                        echo "Pushing Docker image to registry..."
-                        docker push abhi20242024/bms:latest
-                        '''
-                    }
-                }
+                // Push the built image to Docker Hub
+                echo "Pushing Docker image to registry..."
+                docker push abhi20242024/bms:latest
+                if [ $? -ne 0 ]; then
+                    echo "Docker push failed"
+                    exit 1
+                fi
+                '''
             }
         }
+    }
+}
+
         stage('Deploy to Container') {
             steps {
                 sh ''' 
